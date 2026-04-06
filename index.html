@@ -1,0 +1,648 @@
+<!DOCTYPE html><html lang="pt-BR"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vitin ff</title>
+<meta name="application-name" content="HBO MAX">
+<meta name="apple-mobile-web-app-title" content="HBO MAX">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="theme-color" content="#002be0">
+<link rel="manifest" id="manifestLink">
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap');
+* { margin:0; padding:0; box-sizing:border-box; }
+
+:root {
+  --accent: #ffffff;
+  --accent-rgb: 255,255,255;
+  --accent-glow: rgba(255,255,255,0.25);
+  --accent-glow2: rgba(255,255,255,0.5);
+  --toggle-on-bg: #ffffff;
+  --toggle-on-dot: #000000;
+  --border-color: #ffffff;
+}
+
+body {
+  background:#000;
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-family:'Rajdhani',sans-serif;
+  flex-direction:column;
+  gap:12px;
+  overflow-x:hidden;
+}
+
+#matrixCanvas {
+  position:fixed; top:0; left:0;
+  width:100%; height:100%;
+  z-index:0; pointer-events:none;
+}
+
+#installBtn, .panel, .toast { position:relative; z-index:10; }
+
+/* BOTÃO DE COR */
+#colorToggleBtn {
+  position:relative; z-index:10;
+  display:flex; align-items:center; gap:8px;
+  background:linear-gradient(135deg,#111,#1a1a1a);
+  border:2px solid #ff0022;
+  border-radius:10px;
+  padding:8px 16px;
+  cursor:pointer;
+  color:#ff0022;
+  font-family:'Orbitron',sans-serif;
+  font-size:10px;
+  font-weight:700;
+  letter-spacing:1px;
+  box-shadow:0 0 14px rgba(255,0,34,0.5), 0 0 30px rgba(255,0,34,0.15);
+  transition:all 0.3s;
+}
+#colorToggleBtn:hover {
+  box-shadow:0 0 25px rgba(255,0,34,0.8);
+  transform:scale(1.03);
+}
+#colorToggleBtn .dot-preview {
+  width:12px; height:12px; border-radius:50%;
+  background:#ff0022;
+  box-shadow:0 0 8px #ff0022;
+  flex-shrink:0;
+}
+
+/* TEMA VERMELHO NEON */
+body.red-theme {
+  --accent: #ff0022;
+  --accent-rgb: 255,0,34;
+  --accent-glow: rgba(255,0,34,0.25);
+  --accent-glow2: rgba(255,0,34,0.6);
+  --toggle-on-bg: #ff0022;
+  --toggle-on-dot: #ffffff;
+  --border-color: #ff0022;
+}
+
+/* BOTÃO INSTALAR - SEMPRE VISÍVEL */
+#installBtn {
+  display:flex;
+  align-items:center;
+  gap:10px;
+  background:linear-gradient(135deg,#111,#1a1a1a);
+  border:2px solid var(--border-color);
+  border-radius:14px;
+  padding:12px 22px;
+  cursor:pointer;
+  box-shadow:0 0 25px var(--accent-glow), 0 0 60px rgba(var(--accent-rgb),0.05);
+  transition:all 0.3s;
+  animation:pulse-install 2s infinite;
+  text-decoration:none;
+}
+#installBtn:hover {
+  box-shadow:0 0 40px var(--accent-glow2);
+  transform:scale(1.04);
+  background:linear-gradient(135deg,#222,#333);
+}
+@keyframes pulse-install {
+  0%,100% { box-shadow:0 0 25px var(--accent-glow); }
+  50% { box-shadow:0 0 45px var(--accent-glow2); }
+}
+
+.install-icon {
+  width:40px; height:40px;
+  border-radius:10px;
+  overflow:hidden;
+  flex-shrink:0;
+  background:#002be0;
+  display:flex; align-items:center; justify-content:center;
+  box-shadow:0 0 10px rgba(0,43,224,0.6);
+}
+.hbo-logo-svg { width:38px; height:38px; }
+
+.install-text-wrap {
+  display:flex; flex-direction:column; align-items:flex-start;
+}
+.install-label {
+  font-size:9px; color:rgba(255,255,255,0.5);
+  letter-spacing:2px; text-transform:uppercase;
+}
+.install-appname {
+  font-size:17px; font-weight:700; color:#fff; letter-spacing:1px;
+}
+
+.install-arrow {
+  margin-left:6px;
+  width:30px; height:30px;
+  background:rgba(255,255,255,0.1);
+  border:1px solid rgba(var(--accent-rgb),0.4);
+  border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  flex-shrink:0;
+}
+.install-arrow svg {
+  width:15px; height:15px;
+  stroke:white; fill:none;
+  stroke-width:2.5; stroke-linecap:round; stroke-linejoin:round;
+}
+
+/* TOAST */
+.toast {
+  position:fixed; top:20px; left:50%;
+  transform:translateX(-50%) translateY(-60px);
+  background:linear-gradient(135deg,#111,#222);
+  border:1px solid var(--border-color); border-radius:8px;
+  padding:8px 16px; display:flex; align-items:center; gap:8px;
+  font-size:12px; font-weight:700; color:#fff;
+  box-shadow:0 0 20px var(--accent-glow);
+  transition:transform 0.4s cubic-bezier(0.175,0.885,0.32,1.275),opacity 0.4s;
+  opacity:0; z-index:9999; white-space:nowrap;
+  font-family:'Rajdhani',sans-serif;
+}
+.toast.off-toast { border-color:#888; color:#aaa; }
+.toast.show { transform:translateX(-50%) translateY(0); opacity:1; }
+.toast-icon { width:18px; height:18px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.toast-icon.on-icon { background:var(--accent); }
+.toast-icon.off-icon { background:#555; }
+.toast-icon svg { width:10px; height:10px; stroke:#000; fill:none; stroke-width:3; stroke-linecap:round; stroke-linejoin:round; }
+.toast-icon.off-icon svg { stroke:#fff; }
+
+/* PAINEL */
+.panel {
+  width:370px;
+  background:linear-gradient(145deg,#0a0a0a,#111);
+  border:1.5px solid var(--border-color);
+  border-radius:10px;
+  box-shadow:0 0 30px var(--accent-glow), inset 0 0 30px rgba(0,0,0,0.8);
+  display:flex; overflow:hidden;
+  transition:border-color 0.4s, box-shadow 0.4s;
+}
+
+.sidebar {
+  width:48px; background:rgba(0,0,0,0.7);
+  border-right:1px solid rgba(var(--accent-rgb),0.2);
+  display:flex; flex-direction:column; align-items:center;
+  padding:10px 0; gap:8px;
+}
+.sidebar-btn {
+  width:36px; height:36px; border-radius:8px;
+  border:1px solid rgba(255,255,255,0.15);
+  background:rgba(10,10,10,0.9); color:#555;
+  cursor:pointer; display:flex; align-items:center; justify-content:center;
+  transition:all 0.2s; padding:0;
+}
+.sidebar-btn svg { width:18px; height:18px; stroke:currentColor; fill:none; stroke-width:1.5; stroke-linecap:round; stroke-linejoin:round; }
+.sidebar-btn:hover,.sidebar-btn.active { background:rgba(var(--accent-rgb),0.1); border-color:var(--accent); color:var(--accent); box-shadow:0 0 10px var(--accent-glow); }
+
+.content { flex:1; display:flex; flex-direction:column; min-width:0; }
+
+.header { display:flex; align-items:center; justify-content:space-between; padding:10px 14px; border-bottom:1px solid rgba(var(--accent-rgb),0.15); }
+.header-left { display:flex; align-items:center; gap:8px; }
+.header-icon { width:22px; height:22px; border:2px solid var(--accent); border-radius:50%; display:flex; align-items:center; justify-content:center; color:var(--accent); transition:border-color 0.4s, color 0.4s; }
+.header-icon svg { width:12px; height:12px; stroke:currentColor; fill:none; stroke-width:2; }
+.header-title { font-family:'Orbitron',sans-serif; font-size:11px; font-weight:700; color:var(--accent); letter-spacing:2px; transition:color 0.4s; }
+.close-btn { width:22px; height:22px; border:1px solid var(--accent); border-radius:4px; background:rgba(var(--accent-rgb),0.05); color:var(--accent); cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:bold; transition:border-color 0.4s, color 0.4s; }
+.close-btn:hover { background:rgba(var(--accent-rgb),0.15); }
+
+.tab-content { display:none; padding:10px; overflow-y:auto; max-height:520px; }
+.tab-content.active { display:block; }
+.tab-content::-webkit-scrollbar { width:3px; }
+.tab-content::-webkit-scrollbar-thumb { background:#444; border-radius:2px; }
+
+.section-header { background:rgba(var(--accent-rgb),0.05); border:1px solid rgba(var(--accent-rgb),0.2); border-radius:7px; padding:10px 12px; margin-bottom:8px; display:flex; align-items:center; gap:8px; }
+.section-icon { color:var(--accent); display:flex; align-items:center; transition:color 0.4s; }
+.section-icon svg { width:16px; height:16px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+.section-title { font-family:'Orbitron',sans-serif; font-size:10px; font-weight:700; color:var(--accent); letter-spacing:1px; transition:color 0.4s; }
+.section-sub { font-size:10px; color:#666; margin-top:1px; }
+
+.item {
+  background:rgba(0,0,0,0.5); border:1px solid rgba(255,255,255,0.1);
+  border-radius:7px; padding:10px 12px; margin-bottom:6px;
+  display:flex; align-items:center; justify-content:space-between;
+  transition:border-color 0.3s,box-shadow 0.3s;
+  position:relative; overflow:hidden; cursor:pointer;
+}
+.item.is-on { border-color:rgba(var(--accent-rgb),0.5); box-shadow:0 0 8px rgba(var(--accent-rgb),0.15); }
+.item-left { display:flex; align-items:center; gap:8px; }
+.item-icon { color:var(--accent); width:16px; display:flex; align-items:center; justify-content:center; transition:color 0.4s; }
+.item-icon svg { width:14px; height:14px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+.item-name { font-size:13px; font-weight:600; color:#ddd; }
+.item-desc { font-size:10px; color:#555; margin-top:1px; }
+.item-right { display:flex; align-items:center; gap:8px; }
+
+.status-badge {
+  font-size:10px; font-weight:700; color:var(--accent);
+  display:flex; align-items:center; gap:3px;
+  opacity:0; transform:scale(0.6) translateY(4px);
+  transition:opacity 0.3s,transform 0.3s,color 0.4s; white-space:nowrap;
+}
+.status-badge.visible { opacity:1; transform:scale(1) translateY(0); }
+.status-badge .check-icon { width:14px; height:14px; background:var(--accent); border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:background 0.4s; }
+.status-badge .check-icon svg { width:8px; height:8px; stroke:#000; fill:none; stroke-width:3; stroke-linecap:round; stroke-linejoin:round; }
+
+.toggle { width:38px; height:20px; background:#222; border-radius:10px; position:relative; cursor:pointer; transition:background 0.25s; flex-shrink:0; border:1px solid #333; }
+.toggle::after { content:''; position:absolute; left:3px; top:2px; width:14px; height:14px; background:#555; border-radius:50%; transition:left 0.25s,background 0.25s; }
+.toggle.on { background:var(--toggle-on-bg); box-shadow:0 0 8px var(--accent-glow2); border-color:var(--accent); }
+.toggle.on::after { left:21px; background:var(--toggle-on-dot); }
+
+@keyframes ripple { 0%{transform:scale(0);opacity:0.5} 100%{transform:scale(3);opacity:0} }
+.ripple-effect { position:absolute; border-radius:50%; width:20px; height:20px; animation:ripple 0.5s ease-out forwards; pointer-events:none; }
+
+input[type=range] { width:100%; height:4px; -webkit-appearance:none; background:#333; border-radius:2px; outline:none; }
+input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; width:14px; height:14px; border-radius:50%; background:var(--accent); cursor:pointer; box-shadow:0 0 6px var(--accent-glow2); }
+.slider-wrap { width:100%; margin-top:4px; }
+.slider-label { display:flex; justify-content:space-between; font-size:10px; color:#666; margin-bottom:4px; }
+.slider-val { color:var(--accent); font-weight:700; transition:color 0.4s; }
+.hz-labels { display:flex; justify-content:space-between; font-size:9px; color:#555; margin-top:4px; }
+.hz-val { background:rgba(var(--accent-rgb),0.05); border:1px solid var(--accent); border-radius:4px; padding:2px 6px; font-size:10px; font-weight:700; color:var(--accent); transition:border-color 0.4s, color 0.4s; }
+
+.radio-item { background:rgba(0,0,0,0.5); border:1px solid rgba(255,255,255,0.1); border-radius:7px; padding:10px 12px; margin-bottom:6px; display:flex; align-items:center; justify-content:space-between; cursor:pointer; transition:border-color 0.3s; }
+.radio-item.selected-item { border-color:rgba(var(--accent-rgb),0.5); box-shadow:0 0 8px rgba(var(--accent-rgb),0.1); }
+.radio-item.disabled { opacity:0.3; pointer-events:none; }
+.radio-circle { width:18px; height:18px; border-radius:50%; border:2px solid var(--accent); display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:border-color 0.4s; }
+.radio-circle.selected::after { content:''; width:8px; height:8px; border-radius:50%; background:var(--accent); display:block; }
+
+.pro-pack { background:rgba(0,0,0,0.5); border:1px solid rgba(var(--accent-rgb),0.2); border-radius:7px; padding:10px 12px; margin-bottom:6px; }
+.pro-pack-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+.pro-pack-title { font-size:13px; font-weight:700; color:var(--accent); transition:color 0.4s; }
+.pro-feature { display:flex; align-items:center; gap:8px; padding:7px 0; border-top:1px solid rgba(255,255,255,0.08); }
+.pro-feat-icon { width:26px; height:26px; border-radius:5px; background:rgba(var(--accent-rgb),0.08); display:flex; align-items:center; justify-content:center; color:var(--accent); flex-shrink:0; transition:color 0.4s, background 0.4s; }
+.pro-feat-icon svg { width:13px; height:13px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+.pro-feat-name { font-size:12px; font-weight:600; color:#ddd; }
+.pro-feat-desc { font-size:10px; color:#555; }
+.status-ativo { display:flex; align-items:center; gap:6px; margin-top:8px; font-size:12px; font-weight:600; color:#555; }
+.dot-status { width:8px; height:8px; border-radius:50%; background:#444; flex-shrink:0; transition:all 0.3s; }
+.dot-status.on { background:var(--accent); box-shadow:0 0 6px var(--accent-glow2); }
+
+.inject-center { display:flex; flex-direction:column; align-items:center; padding:10px 0 6px; }
+.inject-icon-wrap { width:60px; height:60px; border-radius:50%; border:2px solid var(--accent); display:flex; align-items:center; justify-content:center; color:var(--accent); margin-bottom:8px; box-shadow:0 0 15px var(--accent-glow); transition:border-color 0.4s, color 0.4s, box-shadow 0.4s; }
+.inject-icon-wrap svg { width:28px; height:28px; stroke:currentColor; fill:none; stroke-width:1.5; stroke-linecap:round; stroke-linejoin:round; }
+.inject-title { font-family:'Orbitron',sans-serif; font-size:11px; font-weight:700; color:var(--accent); letter-spacing:1px; margin-bottom:2px; transition:color 0.4s; }
+.inject-sub { font-size:10px; color:#555; margin-bottom:10px; }
+.inject-btns { display:flex; gap:8px; width:100%; }
+.inject-btn { flex:1; padding:9px 4px; background:linear-gradient(135deg,#222,#333); border:1px solid var(--accent); border-radius:6px; color:var(--accent); font-family:'Rajdhani',sans-serif; font-size:10px; font-weight:700; letter-spacing:0.5px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:4px; transition:all 0.2s; text-decoration:none; }
+.inject-btn:hover { background:linear-gradient(135deg,#444,#555); box-shadow:0 0 16px var(--accent-glow2); }
+.inject-status { width:100%; background:rgba(0,0,0,0.5); border:1px solid rgba(var(--accent-rgb),0.1); border-radius:5px; padding:6px 10px; font-size:11px; color:#555; display:flex; align-items:center; gap:6px; margin-top:8px; }
+.dot-gray { width:7px; height:7px; border-radius:50%; background:#444; flex-shrink:0; transition:all 0.3s; }
+
+.code-block-wrap { width:100%; margin-top:8px; background:rgba(0,0,0,0.7); border:1px solid rgba(var(--accent-rgb),0.15); border-radius:6px; overflow:hidden; }
+.code-block-header { background:rgba(var(--accent-rgb),0.05); padding:5px 10px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid rgba(var(--accent-rgb),0.1); }
+.code-block-title { font-family:'Orbitron',sans-serif; font-size:8px; color:var(--accent); letter-spacing:1px; transition:color 0.4s; }
+.code-status { display:flex; align-items:center; gap:4px; font-size:9px; color:#aaa; font-weight:700; }
+.dot-green-sm { width:5px; height:5px; border-radius:50%; background:var(--accent); box-shadow:0 0 4px var(--accent); animation:pulse-g 1.5s infinite; transition:background 0.4s, box-shadow 0.4s; }
+@keyframes pulse-g { 0%,100%{opacity:1} 50%{opacity:0.3} }
+.code-scroll { max-height:180px; overflow-y:auto; padding:8px 10px; font-family:'Share Tech Mono',monospace; font-size:8px; line-height:1.6; }
+.code-scroll::-webkit-scrollbar { width:3px; }
+.code-scroll::-webkit-scrollbar-thumb { background:#444; border-radius:2px; }
+.code-line { display:block; }
+.code-line.c-pink  { color:#ffffff; }
+.code-line.c-green { color:#cccccc; }
+.code-line.c-yellow{ color:#eeeeee; }
+.code-line.c-cyan  { color:#aaaaaa; }
+.code-line.c-white { color:#dddddd; }
+.code-line.c-dim   { color:#333; }
+
+.precision-item { background:rgba(0,0,0,0.5); border:1px solid rgba(var(--accent-rgb),0.1); border-radius:7px; padding:10px 12px; margin-bottom:6px; }
+.precision-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+</style>
+</head>
+<body>
+
+<canvas id="matrixCanvas"></canvas>
+
+<div class="toast" id="toast">
+  <div class="toast-icon on-icon" id="toastIcon">
+    <svg viewBox="0 0 24 24"><polyline points="20,6 9,17 4,12"></polyline></svg>
+  </div>
+  <span id="toastText">Ativado ✅</span>
+</div>
+
+<!-- BOTÃO DE COR -->
+<button id="colorToggleBtn" onclick="toggleColor()">
+  <div class="dot-preview"></div>
+  <span id="colorBtnLabel">MUDAR PARA VERMELHO NEON</span>
+</button>
+
+<!-- BOTÃO INSTALAR SEMPRE VISÍVEL -->
+<button id="installBtn" onclick="installPWA()">
+  <div class="install-icon">
+    <svg class="hbo-logo-svg" viewBox="0 0 120 60" xmlns="http://www.w3.org/2000/svg">
+      <rect width="120" height="60" rx="6" fill="#002be0"></rect>
+      <rect x="6" y="12" width="5" height="36" fill="white"></rect>
+      <rect x="6" y="28" width="18" height="5" fill="white"></rect>
+      <rect x="19" y="12" width="5" height="36" fill="white"></rect>
+      <rect x="30" y="12" width="5" height="36" fill="white"></rect>
+      <rect x="35" y="12" width="9" height="5" fill="white"></rect>
+      <rect x="35" y="28" width="10" height="5" fill="white"></rect>
+      <rect x="35" y="43" width="9" height="5" fill="white"></rect>
+      <rect x="44" y="17" width="4" height="11" rx="2" fill="white"></rect>
+      <rect x="45" y="33" width="4" height="10" rx="2" fill="white"></rect>
+      <path d="M58 12 h8 q10 0 10 18 q0 18-10 18 h-8 q-10 0-10-18 q0-18 10-18z" fill="white"></path>
+      <path d="M60 18 h4 q5 0 5 12 q0 12-5 12 h-4 q-5 0-5-12 q0-12 5-12z" fill="#002be0"></path>
+      <rect x="82" y="12" width="5" height="36" fill="white"></rect>
+      <polygon points="87,12 99,30 111,12 111,48 106,48 106,22 99,36 92,22 92,48 87,48" fill="white"></polygon>
+    </svg>
+  </div>
+  <div class="install-text-wrap">
+    <span class="install-label">Toque para instalar</span>
+    <span class="install-appname">HBO MAX</span>
+  </div>
+  <div class="install-arrow">
+    <svg viewBox="0 0 24 24"><polyline points="8,17 12,21 16,17"></polyline><line x1="12" y1="3" x2="12" y2="21"></line></svg>
+  </div>
+</button>
+
+<div class="panel">
+  <div class="sidebar">
+    <button class="sidebar-btn active" onclick="showTab(0,this)">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><circle cx="12" cy="12" r="3"></circle><line x1="12" y1="3" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="21"></line><line x1="3" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="21" y2="12"></line></svg>
+    </button>
+    <button class="sidebar-btn" onclick="showTab(1,this)">
+      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="1"></rect><rect x="13" y="3" width="8" height="8" rx="1"></rect><rect x="3" y="13" width="8" height="8" rx="1"></rect><rect x="13" y="13" width="8" height="8" rx="1"></rect></svg>
+    </button>
+    <button class="sidebar-btn" onclick="showTab(2,this)">
+      <svg viewBox="0 0 24 24"><path d="M8 21h8M12 17v4"></path><path d="M7 3h10l-1 9a5 5 0 0 1-8 0L7 3z"></path><path d="M7 6H4a1 1 0 0 0-1 1v1a4 4 0 0 0 4 4"></path><path d="M17 6h3a1 1 0 0 1 1 1v1a4 4 0 0 1-4 4"></path></svg>
+    </button>
+    <button class="sidebar-btn" onclick="showTab(3,this)">
+      <svg viewBox="0 0 24 24"><path d="M12 2L4 6v6c0 5 3.5 9.5 8 11 4.5-1.5 8-6 8-11V6L12 2z"></path><polyline points="9,12 11,14 15,10"></polyline></svg>
+    </button>
+    <button class="sidebar-btn" onclick="showTab(4,this)">
+      <svg viewBox="0 0 24 24"><line x1="12" y1="2" x2="12" y2="22"></line><line x1="2" y1="12" x2="22" y2="12"></line><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line><line x1="19.07" y1="4.93" x2="4.93" y2="19.07"></line></svg>
+    </button>
+  </div>
+
+  <div class="content">
+    <div class="header">
+      <div class="header-left">
+        <div class="header-icon">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><circle cx="12" cy="12" r="3"></circle><line x1="12" y1="3" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="21"></line><line x1="3" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="21" y2="12"></line></svg>
+        </div>
+        <span class="header-title">Vitin ff</span>
+      </div>
+      <div class="close-btn">✕</div>
+    </div>
+
+    <!-- TAB 1 -->
+    <div class="tab-content active" id="tab0">
+      <div class="section-header">
+        <span class="section-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><circle cx="12" cy="12" r="3"></circle><line x1="12" y1="3" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="21"></line><line x1="3" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="21" y2="12"></line></svg></span>
+        <div><div class="section-title">Controle de Mira</div><div class="section-sub">Configure os recursos de precisão e estabilidade</div></div>
+      </div>
+      <div class="precision-item">
+        <div class="precision-top">
+          <div class="item-left">
+            <span class="item-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><circle cx="12" cy="12" r="3"></circle></svg></span>
+            <div><div class="item-name">Precisão</div><div class="item-desc">Nível de precisão da mira</div></div>
+          </div>
+        </div>
+        <div class="slider-wrap">
+          <div class="slider-label"><span>0</span><span class="slider-val" id="precVal">0</span><span>10</span></div>
+          <input type="range" min="0" max="10" value="0" id="precSlider" oninput="updatePrec(this.value)">
+        </div>
+      </div>
+      <div class="item" onclick="toggleItem(this,'Controle de Recoil')">
+        <div class="item-left"><span class="item-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><circle cx="12" cy="12" r="3"></circle><line x1="12" y1="3" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="21"></line><line x1="3" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="21" y2="12"></line></svg></span><div><div class="item-name">Controle de Recoil</div><div class="item-desc">Reduz o recuo da arma</div></div></div>
+        <div class="item-right"><div class="status-badge"><div class="check-icon"><svg viewBox="0 0 24 24"><polyline points="20,6 9,17 4,12"></polyline></svg></div>Ativado ✅</div><div class="toggle"></div></div>
+      </div>
+      <div class="item" onclick="toggleItem(this,'Aimbot Legit')">
+        <div class="item-left"><span class="item-icon"><svg viewBox="0 0 24 24"><path d="M12 2L4 6v6c0 5 3.5 9.5 8 11 4.5-1.5 8-6 8-11V6L12 2z"></path><polyline points="9,12 11,14 15,10"></polyline></svg></span><div><div class="item-name">Aimbot Legit</div><div class="item-desc">Melhora o rastreamento</div></div></div>
+        <div class="item-right"><div class="status-badge"><div class="check-icon"><svg viewBox="0 0 24 24"><polyline points="20,6 9,17 4,12"></polyline></svg></div>Ativado ✅</div><div class="toggle"></div></div>
+      </div>
+      <div class="item" onclick="toggleItem(this,'Precisão Absoluta')">
+        <div class="item-left"><span class="item-icon"><svg viewBox="0 0 24 24"><path d="M8 21h8M12 17v4"></path><path d="M7 3h10l-1 9a5 5 0 0 1-8 0L7 3z"></path></svg></span><div><div class="item-name">Precisão Absoluta</div><div class="item-desc">Máxima exatidão</div></div></div>
+        <div class="item-right"><div class="status-badge"><div class="check-icon"><svg viewBox="0 0 24 24"><polyline points="20,6 9,17 4,12"></polyline></svg></div>Ativado ✅</div><div class="toggle"></div></div>
+      </div>
+    </div>
+
+    <!-- TAB 2 -->
+    <div class="tab-content" id="tab1">
+      <div class="section-header">
+        <span class="section-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="1"></rect><rect x="13" y="3" width="8" height="8" rx="1"></rect><rect x="3" y="13" width="8" height="8" rx="1"></rect><rect x="13" y="13" width="8" height="8" rx="1"></rect></svg></span>
+        <div><div class="section-title">Otimização de Performance</div><div class="section-sub">Maximize o desempenho do sistema</div></div>
+      </div>
+      <div class="item" onclick="toggleItem(this,'Estabilização de Tela')">
+        <div class="item-left"><span class="item-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="1"></rect><rect x="13" y="3" width="8" height="8" rx="1"></rect><rect x="3" y="13" width="8" height="8" rx="1"></rect><rect x="13" y="13" width="8" height="8" rx="1"></rect></svg></span><div><div class="item-name">Estabilização de Tela</div><div class="item-desc">Reduz trepidação visual</div></div></div>
+        <div class="item-right"><div class="status-badge"><div class="check-icon"><svg viewBox="0 0 24 24"><polyline points="20,6 9,17 4,12"></polyline></svg></div>Ativado ✅</div><div class="toggle"></div></div>
+      </div>
+      <div class="item" onclick="toggleItem(this,'Diminuir Input Lag')">
+        <div class="item-left"><span class="item-icon"><svg viewBox="0 0 24 24"><path d="M8 21h8M12 17v4"></path><path d="M7 3h10l-1 9a5 5 0 0 1-8 0L7 3z"></path></svg></span><div><div class="item-name">Diminuir Input Lag</div><div class="item-desc">Resposta instantânea</div></div></div>
+        <div class="item-right"><div class="status-badge"><div class="check-icon"><svg viewBox="0 0 24 24"><polyline points="20,6 9,17 4,12"></polyline></svg></div>Ativado ✅</div><div class="toggle"></div></div>
+      </div>
+      <div class="item" style="flex-direction:column;align-items:flex-start;gap:6px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;width:100%;">
+          <div class="item-left"><span class="item-icon"><svg viewBox="0 0 24 24"><path d="M12 2L4 6v6c0 5 3.5 9.5 8 11 4.5-1.5 8-6 8-11V6L12 2z"></path></svg></span><div><div class="item-name">Taxa de Hertz</div><div class="item-desc">Ajuste a taxa de atualização</div></div></div>
+          <span class="hz-val" id="hzVal">60 Hz</span>
+        </div>
+        <div style="width:100%;"><input type="range" min="60" max="144" step="30" value="60" id="hzSlider" oninput="updateHz(this.value)"><div class="hz-labels"><span>60 Hz</span><span>90 Hz</span><span>120 Hz</span><span>144 Hz</span></div></div>
+      </div>
+      <div class="item" onclick="toggleItem(this,'Tirar Delay')">
+        <div class="item-left"><span class="item-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><circle cx="12" cy="12" r="3"></circle></svg></span><div><div class="item-name">Tirar Delay</div><div class="item-desc">Elimina atrasos</div></div></div>
+        <div class="item-right"><div class="status-badge"><div class="check-icon"><svg viewBox="0 0 24 24"><polyline points="20,6 9,17 4,12"></polyline></svg></div>Ativado ✅</div><div class="toggle"></div></div>
+      </div>
+    </div>
+
+    <!-- TAB 3 -->
+    <div class="tab-content" id="tab2">
+      <div class="section-header">
+        <span class="section-icon"><svg viewBox="0 0 24 24"><path d="M8 21h8M12 17v4"></path><path d="M7 3h10l-1 9a5 5 0 0 1-8 0L7 3z"></path><path d="M7 6H4a1 1 0 0 0-1 1v1a4 4 0 0 0 4 4"></path><path d="M17 6h3a1 1 0 0 1 1 1v1a4 4 0 0 1-4 4"></path></svg></span>
+        <div><div class="section-title">Controle de Arrasto</div><div class="section-sub">Ajuste a sensibilidade de movimento</div></div>
+      </div>
+      <div class="radio-item" onclick="selectRadio(this,'Curto')">
+        <div class="item-left"><span class="item-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><circle cx="12" cy="12" r="3"></circle></svg></span><div><div class="item-name">Curto</div><div class="item-desc">Movimentos rápidos e precisos</div></div></div>
+        <div style="display:flex;align-items:center;gap:8px;"><div class="status-badge"><div class="check-icon"><svg viewBox="0 0 24 24"><polyline points="20,6 9,17 4,12"></polyline></svg></div>Ativado ✅</div><div class="radio-circle"></div></div>
+      </div>
+      <div class="radio-item" onclick="selectRadio(this,'Médio')">
+        <div class="item-left"><span class="item-icon"><svg viewBox="0 0 24 24"><path d="M12 2L4 6v6c0 5 3.5 9.5 8 11 4.5-1.5 8-6 8-11V6L12 2z"></path><polyline points="9,12 11,14 15,10"></polyline></svg></span><div><div class="item-name">Médio</div><div class="item-desc">Equilíbrio entre velocidade e controle</div></div></div>
+        <div style="display:flex;align-items:center;gap:8px;"><div class="status-badge"><div class="check-icon"><svg viewBox="0 0 24 24"><polyline points="20,6 9,17 4,12"></polyline></svg></div>Ativado ✅</div><div class="radio-circle"></div></div>
+      </div>
+      <div class="radio-item disabled">
+        <div class="item-left"><span class="item-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="1"></rect><rect x="13" y="3" width="8" height="8" rx="1"></rect><rect x="3" y="13" width="8" height="8" rx="1"></rect><rect x="13" y="13" width="8" height="8" rx="1"></rect></svg></span><div><div class="item-name">Longo</div><div class="item-desc">Movimentos suaves e controlados</div></div></div>
+        <div class="radio-circle"></div>
+      </div>
+    </div>
+
+    <!-- TAB 4 -->
+    <div class="tab-content" id="tab3">
+      <div class="section-header">
+        <span class="section-icon"><svg viewBox="0 0 24 24"><path d="M12 2L4 6v6c0 5 3.5 9.5 8 11 4.5-1.5 8-6 8-11V6L12 2z"></path><polyline points="9,12 11,14 15,10"></polyline></svg></span>
+        <div><div class="section-title">Modo Pro Player</div><div class="section-sub">Configuração profissional completa</div></div>
+      </div>
+      <div class="pro-pack">
+        <div class="pro-pack-header"><span class="pro-pack-title">Pacote Profissional</span><div class="toggle" id="proToggle" onclick="togglePro(this)"></div></div>
+        <div class="pro-feature"><div class="pro-feat-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><circle cx="12" cy="12" r="3"></circle><line x1="12" y1="3" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="21"></line><line x1="3" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="21" y2="12"></line></svg></div><div><div class="pro-feat-name">Mira Estável</div><div class="pro-feat-desc">Estabilização máxima para precisão</div></div></div>
+        <div class="pro-feature"><div class="pro-feat-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="1"></rect><rect x="13" y="3" width="8" height="8" rx="1"></rect><rect x="3" y="13" width="8" height="8" rx="1"></rect><rect x="13" y="13" width="8" height="8" rx="1"></rect></svg></div><div><div class="pro-feat-name">Capa Leve</div><div class="pro-feat-desc">Otimização de recursos do sistema</div></div></div>
+        <div class="pro-feature"><div class="pro-feat-icon"><svg viewBox="0 0 24 24"><path d="M8 21h8M12 17v4"></path><path d="M7 3h10l-1 9a5 5 0 0 1-8 0L7 3z"></path></svg></div><div><div class="pro-feat-name">Resposta Rápida</div><div class="pro-feat-desc">Latência mínima e input instantâneo</div></div></div>
+        <div class="status-ativo" id="proStatus"><div class="dot-status" id="proDot"></div><span id="proStatusTxt">Desativado</span></div>
+      </div>
+    </div>
+
+    <!-- TAB 5 -->
+    <div class="tab-content" id="tab4">
+      <div class="section-header">
+        <span class="section-icon"><svg viewBox="0 0 24 24"><line x1="12" y1="2" x2="12" y2="22"></line><line x1="2" y1="12" x2="22" y2="12"></line><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line><line x1="19.07" y1="4.93" x2="4.93" y2="19.07"></line></svg></span>
+        <div><div class="section-title">Sistema de Injeção</div><div class="section-sub">Gerenciamento de injeção do sistema</div></div>
+      </div>
+      <div style="background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.15);border-radius:7px;padding:10px;">
+        <div class="inject-center">
+          <div class="inject-icon-wrap">
+            <svg viewBox="0 0 24 24"><line x1="12" y1="2" x2="12" y2="22"></line><line x1="2" y1="12" x2="22" y2="12"></line><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line><line x1="19.07" y1="4.93" x2="4.93" y2="19.07"></line></svg>
+          </div>
+          <div class="inject-title">Controle de Injeção</div>
+          <div class="inject-sub">Selecione o jogo para injetar o sistema</div>
+          <div class="inject-btns">
+            <a class="inject-btn" href="intent://#Intent;scheme=freefire;package=com.dts.freefireth;end" onclick="injetar('FF')">
+              <svg style="width:10px;height:10px;stroke:currentColor;fill:none;stroke-width:2;" viewBox="0 0 24 24"><line x1="12" y1="2" x2="12" y2="22"></line><line x1="2" y1="12" x2="22" y2="12"></line><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line><line x1="19.07" y1="4.93" x2="4.93" y2="19.07"></line></svg>
+              INJETAR NO FF
+            </a>
+            <a class="inject-btn" href="intent://#Intent;scheme=freefire;package=com.dts.freefiremax;end" onclick="injetar('FF MAX')">
+              <svg style="width:10px;height:10px;stroke:currentColor;fill:none;stroke-width:2;" viewBox="0 0 24 24"><line x1="12" y1="2" x2="12" y2="22"></line><line x1="2" y1="12" x2="22" y2="12"></line><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line><line x1="19.07" y1="4.93" x2="4.93" y2="19.07"></line></svg>
+              INJETAR NO FF MAX
+            </a>
+          </div>
+          <div class="inject-status">
+            <div class="dot-gray" id="injectDot"></div>
+            <span id="injectText">Aguardando injeção...</span>
+          </div>
+        </div>
+      </div>
+      <div class="code-block-wrap" style="margin-top:8px;">
+        <div class="code-block-header">
+          <span class="code-block-title">◈ AIMBOT MODULE — com.dts.freefireth — v1.120.22</span>
+          <div class="code-status"><div class="dot-green-sm"></div>ACTIVE</div>
+        </div>
+        <div class="code-scroll" id="codeBlock1"></div>
+      </div>
+      <div class="code-block-wrap" style="margin-top:6px;">
+        <div class="code-block-header">
+          <span class="code-block-title">◈ HEADSHOT LOCK MODULE — ELITE PACK</span>
+          <div class="code-status"><div class="dot-green-sm"></div>ACTIVE</div>
+        </div>
+        <div class="code-scroll" id="codeBlock2"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== MATRIX RAIN =====
+(function(){
+  const canvas = document.getElementById('matrixCanvas');
+  const ctx = canvas.getContext('2d');
+  function resize(){ canvas.width=window.innerWidth; canvas.height=window.innerHeight; }
+  resize(); window.addEventListener('resize',resize);
+  const chars='｜|ｌlI1ⅰ⌇⎸⎹⎺⎻⎼⎽│┃╎╏║▏▎▍▌'.split('');
+  const DROPS=175; const fontSize=10;
+  const drops=Array.from({length:DROPS},()=>({x:Math.random()*window.innerWidth,y:Math.random()*-window.innerHeight,speed:1.5+Math.random()*3.5,length:8+Math.floor(Math.random()*20),chars:[],opacity:0.3+Math.random()*0.7}));
+  drops.forEach(d=>{for(let i=0;i<d.length;i++)d.chars.push(chars[Math.floor(Math.random()*chars.length)]);});
+  function draw(){
+    ctx.fillStyle='rgba(0,0,0,0.08)'; ctx.fillRect(0,0,canvas.width,canvas.height);
+    drops.forEach(d=>{
+      d.y+=d.speed;
+      if(d.y-d.length*fontSize>canvas.height){d.x=Math.random()*canvas.width;d.y=Math.random()*-200;d.speed=1.5+Math.random()*3.5;d.length=8+Math.floor(Math.random()*20);d.chars=[];for(let i=0;i<d.length;i++)d.chars.push(chars[Math.floor(Math.random()*chars.length)]);}
+      for(let i=0;i<d.chars.length;i++){
+        const yPos=d.y-i*fontSize;
+        if(yPos<0||yPos>canvas.height)continue;
+        if(i===0){ctx.fillStyle=`rgba(255,255,255,${d.opacity})`;ctx.shadowColor='rgba(255,255,255,0.9)';ctx.shadowBlur=6;ctx.font=`bold ${fontSize}px 'Share Tech Mono',monospace`;}
+        else{const fade=1-(i/d.length);const gray=Math.floor(fade*200);ctx.fillStyle=`rgba(${gray},${gray},${gray},${d.opacity*fade*0.8})`;ctx.shadowBlur=0;ctx.font=`${fontSize-1}px 'Share Tech Mono',monospace`;}
+        ctx.fillText(d.chars[i],d.x,yPos);
+      }
+      ctx.shadowBlur=0;
+    });
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+// ===== TROCA DE COR =====
+let isRed = false;
+function toggleColor(){
+  isRed = !isRed;
+  const btn = document.getElementById('colorToggleBtn');
+  const label = document.getElementById('colorBtnLabel');
+  const dot = btn.querySelector('.dot-preview');
+  if(isRed){
+    document.body.classList.add('red-theme');
+    label.textContent = 'MUDAR PARA BRANCO';
+    dot.style.background = '#ffffff';
+    dot.style.boxShadow = '0 0 8px #ffffff';
+    btn.style.borderColor = '#ff0022';
+    btn.style.color = '#ff0022';
+    btn.style.boxShadow = '0 0 14px rgba(255,0,34,0.5), 0 0 30px rgba(255,0,34,0.15)';
+  } else {
+    document.body.classList.remove('red-theme');
+    label.textContent = 'MUDAR PARA VERMELHO NEON';
+    dot.style.background = '#ff0022';
+    dot.style.boxShadow = '0 0 8px #ff0022';
+    btn.style.borderColor = '#ff0022';
+    btn.style.color = '#ff0022';
+    btn.style.boxShadow = '0 0 14px rgba(255,0,34,0.5), 0 0 30px rgba(255,0,34,0.15)';
+  }
+}
+
+// ===== PWA MANIFEST =====
+const manifestData={name:"HBO MAX",short_name:"HBO MAX",description:"HBO MAX",start_url:"./",display:"standalone",background_color:"#002be0",theme_color:"#002be0",orientation:"portrait",icons:[{src:"data:image/svg+xml;base64,"+btoa(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="80" fill="#002be0"/><text x="256" y="220" font-size="160" font-weight="900" text-anchor="middle" fill="white" font-family="Arial Black,sans-serif">HBO</text><text x="256" y="390" font-size="170" font-weight="900" text-anchor="middle" fill="white" font-family="Arial Black,sans-serif">MAX</text></svg>`),sizes:"512x512",type:"image/svg+xml",purpose:"any maskable"}]};
+const blob=new Blob([JSON.stringify(manifestData)],{type:'application/json'});
+document.getElementById('manifestLink').href=URL.createObjectURL(blob);
+let deferredPrompt=null;
+window.addEventListener('beforeinstallprompt',(e)=>{e.preventDefault();deferredPrompt=e;});
+window.addEventListener('appinstalled',()=>{deferredPrompt=null;});
+function installPWA(){if(deferredPrompt){deferredPrompt.prompt();deferredPrompt.userChoice.then(r=>{deferredPrompt=null;});}else{alert('Para instalar: toque nos 3 pontos do navegador → "Adicionar à tela inicial"');}}
+
+// ===== CÓDIGOS =====
+const aimbot1Lines=[{t:'c-pink',v:'</Android/> </Registre/> = <AimBot 100%> = <com.dts.freefireth> = <1.120.22/>'},{t:'c-green',v:'<Dword: 990090911>'},{t:'c-yellow',v:'["Dword AimBot: 000001"]= AimBot-HeadOnly = Limite-Cabeça = No-Overshoot'},{t:'c-cyan',v:'["Dword Precision: 000001"]= Tracking-Pulo-100% = Tracking-Agachado-100%'},{t:'c-white',v:'["Dword Stability: 000001"]= Anti-Shake = Mira-Estável = Zero-Tremor = Smooth-100%'},{t:'c-yellow',v:'["Dword HeadLock: 000001"]= Trava-Cabeça-Superior = Limite-Hitbox-Head'},{t:'c-cyan',v:'["Dword Movement: 000001"]= Compensação-Vertical = Compensação-Horizontal'},{t:'c-green',v:'</AimBot-HeadLock-Active/> </Precision-MAX/> </Anti-Overshoot/>'},{t:'c-dim',v:'─────────────────────────────'},{t:'c-pink',v:'<Dword: 990090922> </AimBot-Enhanced/>'},{t:'c-yellow',v:'["Dword AimBot: 000002"]= Precisão-Extrema = Sensibilidade-Adaptativa'},{t:'c-cyan',v:'["Dword Track: 000002"]= Seguir-Pulo-Automático = Seguir-Agachar-Automático'},{t:'c-green',v:'</HeadTracking-ON/> </Movement-Compensation-Active/>'},{t:'c-dim',v:'─────────────────────────────'},{t:'c-pink',v:'<Dword: 990090933> </AimBot-Pro/>'},{t:'c-yellow',v:'["Dword AimBot: 000003"]= Mira-Magnética-Cabeça = Precisão-200%'},{t:'c-green',v:'</Ultra-Lock-Active/> </Head-Barrier-ON/> </Perfect-Track/>'},{t:'c-dim',v:'─────────────────────────────'},{t:'c-pink',v:'<Dword: 990090944> </AimBot-Master/>'},{t:'c-yellow',v:'["Dword AimBot: 000004"]= Garantia-Cabeça-100% = Lock-Instantâneo'},{t:'c-green',v:'</HeadShot-Guarantee-ON/> </Perfect-Performance/>'},{t:'c-dim',v:'─────────────────────────────'},{t:'c-pink',v:'<Dword: 990090955> </AimBot-Elite/>'},{t:'c-yellow',v:'["Dword AimBot: 000005"]= Trava-Cabeça-Suprema = Target-Lock-Elite'},{t:'c-cyan',v:'["Dword Intelligence: 000005"]= IA-Rastreamento = Auto-Correção = Smart-Lock'},{t:'c-green',v:'</Supreme-Lock-Active/> </Constraint-Enforced/>'}];
+const aimbot2Lines=[{t:'c-pink',v:'</Android/> = <AimBot Headshot Lock 100%> = <com.dts.freefireth>'},{t:'c-green',v:'<Dword: 990090911> = <Headshot Lock Absoluto/>'},{t:'c-yellow',v:'["000011"]= AimBot Headshot Lock 100% = Priority = Detection 0.001'},{t:'c-cyan',v:'["000012"]= Zero Recoil | ["000013"]= Mira Magnética | ["000014"]= Auto-Track 360°'},{t:'c-green',v:'["AIM BOT"]= mira-puxar-01000%-cabeca-lock = mira-puxar-magnetica'},{t:'c-pink',v:'</Headshot Lock On/> </HEAD_ONLY True/> </Status: ACTIVE/>'}];
+
+function renderCode(id,lines){const el=document.getElementById(id);el.innerHTML='';lines.forEach((line,i)=>{const span=document.createElement('span');span.className='code-line '+line.t;span.textContent=line.v;el.appendChild(span);el.appendChild(document.createElement('br'));});}
+renderCode('codeBlock1',aimbot1Lines);
+renderCode('codeBlock2',aimbot2Lines);
+
+// ===== UI =====
+let toastTimer=null;
+function showToast(name,isOn){
+  const toast=document.getElementById('toast');const toastText=document.getElementById('toastText');const toastIcon=document.getElementById('toastIcon');
+  toast.classList.remove('show','off-toast');void toast.offsetWidth;
+  if(isOn){toastText.textContent=name+' — Ativado ✅';toastIcon.className='toast-icon on-icon';toastIcon.innerHTML='<svg viewBox="0 0 24 24"><polyline points="20,6 9,17 4,12"/></svg>';}
+  else{toastText.textContent=name+' — Desativado ❌';toastIcon.className='toast-icon off-icon';toastIcon.innerHTML='<svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';toast.classList.add('off-toast');}
+  toast.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>toast.classList.remove('show'),2200);
+}
+function toggleItem(itemEl,name){
+  const toggle=itemEl.querySelector('.toggle');const badge=itemEl.querySelector('.status-badge');
+  const isOn=!toggle.classList.contains('on');
+  toggle.classList.toggle('on',isOn);itemEl.classList.toggle('is-on',isOn);badge.classList.toggle('visible',isOn);
+  const ripple=document.createElement('div');ripple.className='ripple-effect';ripple.style.left='10px';ripple.style.top='50%';ripple.style.marginTop='-10px';ripple.style.background=isOn?'rgba(var(--accent-rgb,255,255,255),0.3)':'rgba(100,100,100,0.3)';itemEl.appendChild(ripple);setTimeout(()=>ripple.remove(),500);
+  showToast(name,isOn);
+}
+function selectRadio(item,name){
+  document.querySelectorAll('#tab2 .radio-item:not(.disabled)').forEach(r=>{r.classList.remove('selected-item');r.querySelector('.radio-circle').classList.remove('selected');const b=r.querySelector('.status-badge');if(b)b.classList.remove('visible');});
+  item.classList.add('selected-item');item.querySelector('.radio-circle').classList.add('selected');const badge=item.querySelector('.status-badge');if(badge)badge.classList.add('visible');
+  showToast(name,true);
+}
+function togglePro(el){
+  el.classList.toggle('on');const isOn=el.classList.contains('on');
+  document.getElementById('proDot').classList.toggle('on',isOn);
+  document.getElementById('proStatusTxt').textContent=isOn?'Ativado':'Desativado';
+  document.getElementById('proStatus').style.color=isOn?'var(--accent)':'#555';
+  showToast('Pacote Profissional',isOn);
+}
+function showTab(index,btn){
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.sidebar-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab'+index).classList.add('active');btn.classList.add('active');
+}
+function updatePrec(val){
+  document.getElementById('precVal').textContent=val;
+  const pct=(val/10)*100;
+  document.getElementById('precSlider').style.background=`linear-gradient(to right,var(--accent) ${pct}%,#333 ${pct}%)`;
+}
+function updateHz(val){
+  document.getElementById('hzVal').textContent=val+' Hz';
+  const pct=((val-60)/(144-60))*100;
+  document.getElementById('hzSlider').style.background=`linear-gradient(to right,var(--accent) ${pct}%,#333 ${pct}%)`;
+}
+function injetar(game){
+  const dot=document.getElementById('injectDot');const txt=document.getElementById('injectText');
+  txt.textContent='Injetando no '+game+'...';dot.style.background='#aaa';dot.style.boxShadow='0 0 6px rgba(200,200,200,0.7)';
+  let i=0;const steps=['[•] Iniciando...','[•] Conectando...','[•] Concluído!'];
+  const iv=setInterval(()=>{if(i<steps.length){i++;}else{clearInterval(iv);txt.textContent='✓ Injetado com sucesso no '+game;dot.style.background='var(--accent)';dot.style.boxShadow='0 0 6px var(--accent)';}},600);
+}
+updatePrec(0);updateHz(60);
+</script>
+</body></html>
